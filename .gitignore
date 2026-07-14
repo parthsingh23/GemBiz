@@ -1,0 +1,29 @@
+# Virtual Environment
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Environment Variables
+.env
+
+# Streamlit
+.streamlit/
+
+# Ignore uploaded CSVs but keep the folder
+uploads/*
+!uploads/.gitkeep
+
+# Ignore exported reports
+exports/*
+!exports/.gitkeep
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
