@@ -1,6 +1,6 @@
-# Business Analyzer
+# 💎 GemBiz
 
-An AI-powered Business Analytics Dashboard built with Streamlit, Pandas, Plotly, and Gemma.
+AI-powered Business Intelligence Platform built with Google Gemma.
 
 ## Features
 

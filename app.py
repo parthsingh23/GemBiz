@@ -5,8 +5,8 @@ import streamlit as st
 # ----------------------------
 
 st.set_page_config(
-    page_title="Business Analyzer",
-    page_icon="📊",
+    page_title="GemBiz",
+    page_icon="💎",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -15,7 +15,7 @@ st.set_page_config(
 # Sidebar
 # ----------------------------
 
-st.sidebar.title("📊 Business Analyzer")
+st.sidebar.title("💎 GemBiz")
 
 st.sidebar.markdown("---")
 
@@ -42,10 +42,10 @@ st.sidebar.info(
 
 if page == "Dashboard":
 
-    st.title("📊 Business Analyzer")
+    st.title("💎 GemBiz")
 
     st.write(
-        "Welcome! Upload your sales, expenses, and inventory data to generate business insights."
+        "Your AI-powered business intelligence platform. Upload your business data and let Gemma transform it into actionable insights."
     )
 
     st.markdown("---")
