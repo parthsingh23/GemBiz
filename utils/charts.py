@@ -1,82 +1,107 @@
 import plotly.express as px
+import plotly.graph_objects as go
 
 
-def revenue_chart(sales_df):
+def revenue_chart(df):
+
+    revenue = (
+        df.groupby("Date")["Revenue"]
+        .sum()
+        .reset_index()
+    )
 
     fig = px.line(
-        sales_df,
+        revenue,
         x="Date",
         y="Revenue",
-        markers=True,
-        title="Revenue Over Time"
-    )
-
-    fig.update_layout(
-        template="plotly_dark",
-        height=400,
-        margin=dict(l=20, r=20, t=50, b=20)
+        title="Revenue Trend"
     )
 
     return fig
 
 
-def inventory_chart(inventory_df):
+def expense_chart(df):
 
-    fig = px.bar(
-        inventory_df,
-        x="Product",
-        y="Stock",
-        color="Stock",
-        title="Inventory Status"
-    )
-
-    fig.update_layout(
-        template="plotly_dark",
-        height=400,
-        margin=dict(l=20, r=20, t=50, b=20)
-    )
-
-    return fig
-
-
-def expense_chart(expenses_df):
-
-    fig = px.pie(
-        expenses_df,
-        names="Category",
-        values="Amount",
-        hole=0.45,
-        title="Expense Breakdown"
-    )
-
-    fig.update_layout(
-        template="plotly_dark",
-        height=400
-    )
-
-    return fig
-
-
-def top_products_chart(sales_df):
-
-    grouped = (
-        sales_df
-        .groupby("Product")["Revenue"]
+    expense = (
+        df.groupby("Category")["Amount"]
         .sum()
         .reset_index()
     )
 
     fig = px.bar(
-        grouped,
+        expense,
+        x="Category",
+        y="Amount",
+        title="Expenses"
+    )
+
+    return fig
+
+
+def inventory_chart(df):
+
+    fig = px.bar(
+        df,
+        x="Product",
+        y="Stock",
+        title="Inventory"
+    )
+
+    return fig
+
+
+def top_products_chart(df):
+
+    top = (
+        df.groupby("Product")["Revenue"]
+        .sum()
+        .reset_index()
+        .sort_values(
+            "Revenue",
+            ascending=False
+        )
+    )
+
+    fig = px.bar(
+        top,
         x="Product",
         y="Revenue",
-        color="Revenue",
         title="Top Selling Products"
     )
 
+    return fig
+
+
+def forecast_chart(history_df, forecast_df):
+
+    fig = go.Figure()
+
+    historical = (
+        history_df.groupby("Date")["Revenue"]
+        .sum()
+        .reset_index()
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=historical["Date"],
+            y=historical["Revenue"],
+            mode="lines+markers",
+            name="Historical"
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=forecast_df["Date"],
+            y=forecast_df["Predicted Revenue"],
+            mode="lines+markers",
+            name="Forecast"
+        )
+    )
+
     fig.update_layout(
-        template="plotly_dark",
-        height=400
+        title="7-Day Revenue Forecast"
     )
 
     return fig
