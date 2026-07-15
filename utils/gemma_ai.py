@@ -134,27 +134,16 @@ Products Running Low
 
 Return ONLY plain text.
 
-Never use Markdown.
+Formatting Rules:
 
-Never use:
+- Never use Markdown.
+- Never use **, __, #, ##, ###.
+- Never use numbered headings.
+- Never write "BUSINESS ANALYSIS REPORT".
+- Never wrap the response inside code blocks.
+- Do not use markdown tables.
 
-**
-
-__
-
-#
-
-1.
-
-2.
-
-3.
-
-BUSINESS ANALYSIS REPORT
-
-Do not wrap text inside code blocks.
-
-The report MUST contain ONLY these sections:
+The report MUST contain ONLY these section headings exactly as written:
 
 Business Summary
 
@@ -166,29 +155,91 @@ Risks
 
 Actionable Recommendations
 
-Under every section write exactly 3-5 bullet points.
+Formatting Example (follow exactly):
 
-Every bullet MUST start with:
+Business Summary
 
-•
+• Revenue has increased.
+• Expenses remain high.
+• Inventory levels are stable.
 
-No introductions.
+Strengths
 
-No conclusions.
+• Strong demand for Coffee.
+• Healthy inventory management.
+• Consistent customer sales.
 
-No markdown tables.
+Weaknesses
 
-Keep recommendations practical.
+• High operating expenses.
+• Low profit margin.
+• Heavy dependence on one product.
+
+Risks
+
+• Cash flow pressure.
+• Supplier dependency.
+• Rising operational costs.
+
+Actionable Recommendations
+
+• Reduce unnecessary expenses.
+• Increase marketing for high-margin products.
+• Diversify product offerings.
+
+Rules:
+
+- Leave ONE blank line after every heading.
+- Every bullet MUST begin on a NEW LINE.
+- Never place bullets on the same line as a heading.
+- Never combine multiple bullets into one paragraph.
+- Write exactly 3-5 bullet points per section.
+- Keep every bullet concise and actionable.
+- Do not add any introduction or conclusion.
 """
 
     models = [
-
+    
+        # ==========================
+        # Gemma
+        # ==========================
+    
         "gemma-4-31b-it",
-
         "gemma-4-26b-a4b-it",
-
+    
+        # ==========================
+        # Gemini 3.x
+        # ==========================
+    
         "gemini-3.5-flash",
-
+    
+        "gemini-3.1-pro-preview",
+    
+        "gemini-3-pro-preview",
+    
+        "gemini-3-flash-preview",
+    
+        "gemini-3.1-flash-lite",
+    
+        "gemini-3.1-flash-lite-preview",
+    
+        # ==========================
+        # Gemini 2.5
+        # ==========================
+    
+        "gemini-2.5-pro",
+    
+        "gemini-2.5-flash",
+    
+        "gemini-2.5-flash-lite",
+    
+        # ==========================
+        # Gemini 2.0
+        # ==========================
+    
+        "gemini-2.0-flash",
+    
+        "gemini-2.0-flash-lite",
     ]
 
     last_error = None
@@ -209,6 +260,8 @@ Keep recommendations practical.
             if text:
 
                 cleaned = text.strip()
+                cleaned = cleaned.replace("\r\n", "\n")
+                cleaned = cleaned.replace("\r", "\n")
 
                 if cleaned:
 

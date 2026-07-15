@@ -125,11 +125,11 @@ def generate_pdf(kpis, report, forecast_df):
     story.append(
         Paragraph(
             f"""
-            <b>Revenue</b> : Rs. {kpis['Revenue']:,.0f}<br/><br/>
+            <b>Revenue</b> : Rs {kpis['Revenue']:,.0f}<br/><br/>
 
-            <b>Expenses</b> : Rs. {kpis['Expenses']:,.0f}<br/><br/>
+            <b>Expenses</b> : Rs {kpis['Expenses']:,.0f}<br/><br/>
 
-            <b>Profit</b> : Rs. {kpis['Profit']:,.0f}<br/><br/>
+            <b>Profit</b> : Rs {kpis['Profit']:,.0f}<br/><br/>
 
             <b>Inventory</b> : {kpis['Inventory']} Units<br/><br/>
 
@@ -223,7 +223,7 @@ def generate_pdf(kpis, report, forecast_df):
             Paragraph(
                 f"""
                 <b>Predicted Average Revenue</b> :
-                Rs. {avg:,.0f}<br/><br/>
+                Rs {avg:,.0f}<br/><br/>
 
                 <b>Business Trend</b> :
                 {trend}

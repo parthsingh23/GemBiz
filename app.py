@@ -1,5 +1,14 @@
 import streamlit as st
+import time
 
+from streamlit_lottie import st_lottie
+import requests
+
+from utils.invoice_generator import (
+    generate_invoice_number,
+    generate_invoice_pdf,
+    calculate_unit_price,
+)
 from utils.gemma_ai import generate_business_report
 from utils.business_chat import ask_business_ai
 from utils.pdf_generator import generate_pdf
@@ -20,6 +29,16 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+LOTTIE_URL = "https://assets10.lottiefiles.com/packages/lf20_usmfx6bp.json"
+
+try:
+    animation = requests.get(LOTTIE_URL).json()
+except:
+    animation = None
 
 with st.sidebar:
     st.title("💎 GemBiz")
@@ -89,9 +108,9 @@ st.divider()
 
 m1,m2,m3,m4,m5 = st.columns(5)
 
-m1.metric("💰 Revenue", f"₹{kpis['Revenue']:,.0f}")
-m2.metric("📉 Expenses", f"₹{kpis['Expenses']:,.0f}")
-m3.metric("📈 Profit", f"₹{kpis['Profit']:,.0f}")
+m1.metric("💰 Revenue", f"Rs. {kpis['Revenue']:,.0f}")
+m2.metric("📉 Expenses", f"Rs. {kpis['Expenses']:,.0f}")
+m3.metric("📈 Profit", f"Rs. {kpis['Profit']:,.0f}")
 m4.metric("📦 Inventory", f"{kpis['Inventory']}")
 m5.metric("❤️ Health", f"{kpis['Health Score']}/100", kpis["Health Status"])
 
@@ -117,39 +136,102 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
 
     st.divider()
 
-    st.subheader("🧠 AI Business Report")
+    placeholder = st.empty()
 
     try:
-        report = generate_business_report(
-            kpis,
-            sales_df,
-            inventory_df,
-            expenses_df,
-        )
 
-        print("=" * 40)
-        print("REPORT:")
-        print(report)
-        print(type(report))
-        print("=" * 40)
+        with placeholder.container():
+
+            if animation:
+                st_lottie(
+                    animation,
+                    height=220,
+                    key="loading",
+                )
+
+            st.info("🤖 GemBiz AI is analyzing your business...")
+
+            report = generate_business_report(
+                kpis,
+                sales_df,
+                inventory_df,
+                expenses_df,
+            )
+
+        placeholder.empty()
+
+        st.success("✅ Analysis Complete!")
 
         with st.container(border=True):
             st.markdown(report)
 
     except Exception as e:
+
+        placeholder.empty()
+
         report = f"Unable to generate report.\n\n{e}"
+
         st.error(report)
+
+        st.divider()
+
+    # ======================================================
+    # AI Chat
+    # ======================================================
 
     st.divider()
 
     st.subheader("💬 Ask GemBiz AI")
 
-    question = st.text_input(
-        "Ask anything about your business..."
-    )
+    with st.container(border=True):
 
-    if st.button("Ask AI") and question.strip():
-        with st.spinner("GemBiz is thinking..."):
+        st.caption(
+            "Ask questions about your uploaded business data."
+        )
+
+        st.markdown("""
+        **Try asking:**
+
+        - Which product generates the most revenue?
+        - How can I improve profit?
+        - Which expense category is the highest?
+        - Give me a business summary.
+        """)
+
+        question = st.text_area(
+            "Ask your question",
+            placeholder="Example: How can I improve my profit margin?",
+            height=100,
+        )
+
+        ask = st.button(
+            "🤖 Ask GemBiz",
+            width="stretch",
+        )
+
+    for q, a in reversed(st.session_state.chat_history):
+        
+        with st.chat_message("user"):
+            st.write(q)
+        with st.chat_message("assistant"):
+            st.write(a)
+
+    if ask and question.strip():
+
+        with st.status(
+            "🤖 GemBiz AI is analyzing your question...",
+            expanded=True,
+        ) as status:
+
+            st.write("📊 Reading uploaded business data...")
+            time.sleep(0.4)
+
+            st.write("🧠 Understanding your question...")
+            time.sleep(0.4)
+
+            st.write("💡 Consulting Google Gemma...")
+            time.sleep(0.4)
+
             answer = ask_business_ai(
                 question,
                 kpis,
@@ -157,7 +239,25 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
                 inventory_df,
                 expenses_df,
             )
-        st.success(answer)
+
+            status.update(
+                label="✅ Response Ready",
+                state="complete",
+            )
+
+        st.session_state.chat_history.append(
+            (question, answer)
+        )
+
+        st.rerun()
+
+        # for q, a in reversed(st.session_state.chat_history):
+        
+        #     with st.chat_message("user"):
+        #         st.write(q)
+
+        #     with st.chat_message("assistant"):
+        #         st.write(a)
 
     st.divider()
 
@@ -192,7 +292,7 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
 
             st.metric(
                 "7-Day Avg Revenue",
-                f"₹{predicted:,.0f}"
+                f"Rs. {predicted:,.0f}"
             )
 
             st.metric(
@@ -216,6 +316,128 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
             mime="application/pdf",
             width="stretch",
         )
+
+        # ======================================================
+        # Invoice Generator
+        # ======================================================
+
+        st.divider()
+
+        st.subheader("🧾 Invoice Generator")
+
+        if "invoice_number" not in st.session_state:
+            st.session_state.invoice_number = generate_invoice_number()
+
+        with st.container(border=True):
+
+            st.caption(
+                "Generate a professional invoice for your customer."
+            )
+
+            customer_name = st.text_input(
+                "Customer Name"
+            )
+
+            customer_phone = st.text_input(
+                "Customer Phone Number"
+            )
+
+            products = sorted(
+                sales_df["Product"].unique()
+            )
+
+            product = st.selectbox(
+                "Select Product",
+                products,
+            )
+
+            quantity = st.number_input(
+                "Quantity",
+                min_value=1,
+                value=1,
+                step=1,
+            )
+
+            st.info(
+                f"Invoice Number: {st.session_state.invoice_number}"
+            )
+
+            generate_invoice = st.button(
+                "🧾 Generate Invoice",
+                width="stretch",
+            )
+
+        if generate_invoice:
+
+
+            if not customer_name.strip():
+                st.error("Enter customer name.")
+                st.stop()
+
+            if not customer_phone.strip():
+                st.error("Enter customer phone number.")
+                st.stop()
+
+            if not customer_phone.isdigit():
+                st.error("Phone number must contain digits only.")
+                st.stop()
+
+            if len(customer_phone) != 10:
+                st.error("Phone number must be 10 digits.")
+                st.stop()
+        
+            invoice_pdf = generate_invoice_pdf(
+                invoice_number=st.session_state.invoice_number,
+                customer_name=customer_name,
+                customer_phone=customer_phone,
+                product=product,
+                quantity=quantity,
+                sales_df=sales_df,
+            )
+
+            st.success("✅ Invoice generated successfully!")
+
+            st.download_button(
+                label="📄 Download Invoice",
+                data=invoice_pdf,
+                file_name=f"{st.session_state.invoice_number}.pdf",
+                mime="application/pdf",
+                width="stretch",
+            )
+
+            # Show Invoice Preview
+            st.divider()
+
+            st.subheader("Invoice Preview")
+
+            unit_price = calculate_unit_price(
+                sales_df,
+                product,
+            )
+
+            if unit_price <= 0:
+                st.error(
+                    "Unable to determine the product price from the uploaded sales data."
+                )
+                st.stop()
+
+            total = unit_price * quantity
+
+            c1, c2 = st.columns(2)
+
+            with c1:
+                st.write(f"**Invoice No.:** {st.session_state.invoice_number}")
+                st.write(f"**Customer:** {customer_name}")
+                st.write(f"**Phone:** {customer_phone}")
+
+            with c2:
+                st.write(f"**Product:** {product}")
+                st.write(f"**Quantity:** {quantity}")
+                st.write(f"**Unit Price:** Rs. {unit_price:,.2f}")
+                st.write(f"**Total:** Rs. {total:,.2f}")
+
+            # Generate a new invoice number for the next invoice
+            st.session_state.invoice_number = generate_invoice_number()
 
 else:
     st.info(
