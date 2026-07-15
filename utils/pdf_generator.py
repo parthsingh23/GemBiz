@@ -1,5 +1,6 @@
 from io import BytesIO
 from datetime import datetime
+import re
 
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import (
@@ -9,18 +10,46 @@ from reportlab.platypus import (
 )
 
 
+def clean_ai_report(report):
+    """
+    Convert AI markdown output into PDF-friendly text.
+    """
+
+    report = re.sub(r"\*\*(.*?)\*\*", r"\1", report)
+    report = report.replace("#", "")
+    report = report.replace("* ", "• ")
+
+    return report.strip()
+
+
 def generate_pdf(kpis, report, forecast_df):
 
     buffer = BytesIO()
 
-    doc = SimpleDocTemplate(buffer)
+    doc = SimpleDocTemplate(
+        buffer,
+        topMargin=40,
+        bottomMargin=40,
+    )
 
     styles = getSampleStyleSheet()
 
+    title_style = styles["Title"]
+    heading_style = styles["Heading2"]
+    normal_style = styles["BodyText"]
+    footer_style = styles["Italic"]
+
     story = []
 
+    # ======================================================
+    # Title
+    # ======================================================
+
     story.append(
-        Paragraph("<b>GemBiz Business Report</b>", styles["Title"])
+        Paragraph(
+            "<font size='24'><b>GemBiz Business Report</b></font>",
+            title_style,
+        )
     )
 
     story.append(
@@ -28,51 +57,111 @@ def generate_pdf(kpis, report, forecast_df):
             datetime.now().strftime(
                 "Generated on %d %B %Y, %I:%M %p"
             ),
-            styles["Normal"],
+            normal_style,
         )
     )
 
     story.append(Spacer(1, 20))
 
+    # ======================================================
+    # KPIs
+    # ======================================================
+
     story.append(
-        Paragraph("<b>Business KPIs</b>", styles["Heading2"])
+        Paragraph(
+            "Business KPIs",
+            heading_style,
+        )
     )
+
+    story.append(Spacer(1, 8))
 
     story.append(
         Paragraph(
             f"""
-Revenue : ₹{kpis['Revenue']:,.0f}<br/>
-Expenses : ₹{kpis['Expenses']:,.0f}<br/>
-Profit : ₹{kpis['Profit']:,.0f}<br/>
-Inventory : {kpis['Inventory']} Units<br/>
-Health Score : {kpis['Health Score']}/100
-""",
-            styles["BodyText"],
+            <b>Revenue</b> : Rs. {kpis['Revenue']:,.0f}<br/><br/>
+
+            <b>Expenses</b> : Rs. {kpis['Expenses']:,.0f}<br/><br/>
+
+            <b>Profit</b> : Rs. {kpis['Profit']:,.0f}<br/><br/>
+
+            <b>Inventory</b> : {kpis['Inventory']} Units<br/><br/>
+
+            <b>Health Score</b> : {kpis['Health Score']}/100
+        """,
+            normal_style,
         )
     )
 
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 20))
+
+    # ======================================================
+    # AI Report
+    # ======================================================
 
     story.append(
-        Paragraph("<b>AI Business Report</b>", styles["Heading2"])
+        Paragraph(
+            "AI Business Report",
+            heading_style,
+        )
     )
 
-    report = report.replace("\n", "<br/>")
+    story.append(Spacer(1, 10))
 
-    story.append(
-        Paragraph(report, styles["BodyText"])
-    )
+    report = clean_ai_report(report)
 
-    story.append(Spacer(1, 15))
+    headings = [
+        "Business Summary",
+        "Strengths",
+        "Weaknesses",
+        "Risks",
+        "Actionable Recommendations",
+    ]
+
+    for line in report.split("\n"):
+
+        line = line.strip()
+
+        if not line:
+            story.append(Spacer(1, 8))
+            continue
+
+        if any(h in line for h in headings):
+
+            story.append(
+                Paragraph(
+                    f"<b>{line}</b>",
+                    heading_style,
+                )
+            )
+
+            story.append(Spacer(1, 6))
+
+        else:
+
+            story.append(
+                Paragraph(
+                    line,
+                    normal_style,
+                )
+            )
+
+    story.append(Spacer(1, 20))
+
+    # ======================================================
+    # Forecast
+    # ======================================================
 
     if forecast_df is not None:
 
         story.append(
             Paragraph(
-                "<b>Revenue Forecast</b>",
-                styles["Heading2"],
+                "Revenue Forecast",
+                heading_style,
             )
         )
+
+        story.append(Spacer(1, 8))
 
         avg = forecast_df["Predicted Revenue"].mean()
 
@@ -87,22 +176,40 @@ Health Score : {kpis['Health Score']}/100
         story.append(
             Paragraph(
                 f"""
-Expected Average Revenue:
-₹{avg:,.0f}<br/><br/>
+<b>Expected Average Revenue</b> :
+Rs. {avg:,.0f}<br/><br/>
 
-Business Trend:
+<b>Business Trend</b> :
 {trend}
 """,
-                styles["BodyText"],
+                normal_style,
             )
         )
 
-    story.append(Spacer(1, 20))
+    story.append(Spacer(1, 30))
+
+    # ======================================================
+    # Footer
+    # ======================================================
 
     story.append(
         Paragraph(
-            "Generated using GemBiz • Powered by Google Gemma",
-            styles["Italic"],
+            "Generated by GemBiz",
+            footer_style,
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "AI-Powered Business Intelligence",
+            footer_style,
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "Powered by Google Gemma",
+            footer_style,
         )
     )
 

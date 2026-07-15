@@ -18,6 +18,7 @@ if not API_KEY:
 
 client = genai.Client(api_key=API_KEY)
 
+
 # ----------------------------------------------------
 # Generate Business Report
 # ----------------------------------------------------
@@ -89,18 +90,14 @@ def generate_business_report(
     # ------------------------------------------------
 
     prompt = f"""
-You are an expert Business Consultant.
+You are a senior business consultant preparing a professional report for a small business owner.
 
-Analyze the following business.
+Business Data
 
-Revenue: ₹{revenue:,.2f}
-
-Expenses: ₹{expenses:,.2f}
-
-Profit: ₹{profit:,.2f}
-
+Revenue: Rs. {revenue:,.2f}
+Expenses: Rs. {expenses:,.2f}
+Profit: Rs. {profit:,.2f}
 Inventory Units: {inventory}
-
 Business Health Score: {health}/100
 
 Top Selling Product:
@@ -112,23 +109,32 @@ Highest Expense Category:
 Products Running Low:
 {", ".join(low_stock)}
 
-Generate a professional business report using the following headings:
+Write a professional business report.
 
-1. Business Summary
+The report MUST contain exactly these sections:
 
-2. Strengths
+Business Summary
 
-3. Weaknesses
+Strengths
 
-4. Risks
+Weaknesses
 
-5. Actionable Recommendations
+Risks
 
-Rules:
-- Keep the report concise.
-- Use bullet points.
-- Do NOT use markdown tables.
-- Be practical and business-focused.
+Actionable Recommendations
+
+Formatting Rules:
+
+• Use plain text only.
+• Do NOT use Markdown.
+• Do NOT use ** or __.
+• Do NOT use # headings.
+• Do NOT number sections.
+• Use the section titles exactly as written.
+• Under each section write 3–5 concise bullet points.
+• Every bullet must begin with the bullet character (•).
+• Keep recommendations practical.
+• Do not write introductions or conclusions.
 """
 
     # ------------------------------------------------
@@ -150,21 +156,53 @@ Rules:
             response = client.models.generate_content(
                 model=model,
                 contents=prompt,
+                config={
+                    "temperature": 0.3,
+                },
             )
 
-            if response.text:
+            text = getattr(response, "text", None)
 
-                print(f"Using AI model: {model}")
+            if text and text.strip():
 
-                return response.text.strip()
+                print(f"✅ Using AI model: {model}")
+
+                return text.strip()
 
         except Exception as e:
+
+            print(f"❌ {model} failed: {e}")
 
             last_error = e
 
             continue
 
-    raise RuntimeError(
-        "All AI models are currently unavailable.\n\n"
-        f"Last Error: {last_error}"
-    )
+    # ------------------------------------------------
+    # Final Fallback
+    # ------------------------------------------------
+
+    return f"""
+Business Summary
+
+• AI report could not be generated.
+
+Strengths
+
+• Revenue, expenses, inventory and forecast are still available.
+
+Weaknesses
+
+• AI service is currently unavailable.
+
+Risks
+
+• Business recommendations could not be generated.
+
+Actionable Recommendations
+
+• Please try generating the report again later.
+
+Technical Details
+
+• Last Error: {last_error}
+"""

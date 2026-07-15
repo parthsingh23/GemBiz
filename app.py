@@ -102,18 +102,18 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
     left,right = st.columns(2)
 
     with left:
-        st.plotly_chart(revenue_chart(sales_df), use_container_width=True)
+        st.plotly_chart(revenue_chart(sales_df), width="stretch")
 
     with right:
-        st.plotly_chart(inventory_chart(inventory_df), use_container_width=True)
+        st.plotly_chart(inventory_chart(inventory_df), width="stretch")
 
     left,right = st.columns(2)
 
     with left:
-        st.plotly_chart(expense_chart(expenses_df), use_container_width=True)
+        st.plotly_chart(expense_chart(expenses_df), width="stretch")
 
     with right:
-        st.plotly_chart(top_products_chart(sales_df), use_container_width=True)
+        st.plotly_chart(top_products_chart(sales_df), width="stretch")
 
     st.divider()
 
@@ -126,6 +126,12 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
             inventory_df,
             expenses_df,
         )
+
+        print("=" * 40)
+        print("REPORT:")
+        print(report)
+        print(type(report))
+        print("=" * 40)
 
         with st.container(border=True):
             st.markdown(report)
@@ -171,7 +177,7 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
                     sales_df,
                     forecast_df
                 ),
-                use_container_width=True
+                width="stretch"
             )
 
         with col2:
@@ -196,7 +202,7 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
 
             st.dataframe(
                 forecast_df,
-                use_container_width=True
+                width="stretch"
             )
 
         st.download_button(
@@ -208,7 +214,7 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
             ),
             file_name="GemBiz_Report.pdf",
             mime="application/pdf",
-            use_container_width=True,
+            width="stretch",
         )
 
 else:
