@@ -1,5 +1,6 @@
 import os
 import json
+import re
 
 from dotenv import load_dotenv
 from google import genai
@@ -12,10 +13,6 @@ client = genai.Client(
 
 
 def map_columns(df, dataset_type):
-    """
-    Uses Gemma to map uploaded column names
-    to GemBiz's expected schema.
-    """
 
     if dataset_type == "sales":
 
@@ -45,6 +42,21 @@ def map_columns(df, dataset_type):
     else:
 
         return df
+
+    # ============================================
+    # NEW: Skip AI if the CSV already has
+    # the expected columns
+    # ============================================
+
+    expected_set = set(expected)
+    uploaded_set = set(df.columns)
+
+    if expected_set.issubset(uploaded_set):
+        return df
+
+    # ============================================
+    # Continue with AI mapping
+    # ============================================
 
     columns = list(df.columns)
 
@@ -89,12 +101,28 @@ Do NOT explain anything.
 Return ONLY valid JSON.
 """
 
+    # response = client.models.generate_content(
+    #     model="gemma-4-31b-it",
+    #     contents=prompt
+    # )
+
     response = client.models.generate_content(
-        model="gemma-4-31b-it",
-        contents=prompt
+    model="gemma-4-31b-it",
+    contents=prompt
     )
 
-    mapping = json.loads(response.text)
+    print("========== GEMMA RESPONSE ==========")
+    print(response.text)
+    print("===================================")
+
+    text = response.text.strip()
+
+    # Remove markdown code blocks if present
+    text = re.sub(r"^```json\s*", "", text)
+    text = re.sub(r"^```\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+
+    mapping = json.loads(text)
 
     rename_dict = {}
 

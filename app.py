@@ -38,9 +38,27 @@ with st.sidebar:
     else:
         st.warning("Upload all three CSV files.")
 
-sales_df = load_csv(sales_file)
-inventory_df = load_csv(inventory_file)
-expenses_df = load_csv(expenses_file)
+try:
+
+    sales_df = load_csv(
+        sales_file,
+        "sales"
+    )
+
+    inventory_df = load_csv(
+        inventory_file,
+        "inventory"
+    )
+
+    expenses_df = load_csv(
+        expenses_file,
+        "expenses"
+    )
+
+except Exception as e:
+
+    st.error(str(e))
+    st.stop()
 
 kpis = calculate_kpis(
     sales_df,
