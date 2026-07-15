@@ -3,9 +3,9 @@ import os
 from dotenv import load_dotenv
 from google import genai
 
-# ----------------------------------------------------
+# ==========================================================
 # Load Environment Variables
-# ----------------------------------------------------
+# ==========================================================
 
 load_dotenv()
 
@@ -13,15 +13,76 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not API_KEY:
     raise ValueError(
-        "❌ GEMINI_API_KEY not found. Please check your .env file."
+        "GEMINI_API_KEY not found. Check your .env file."
     )
 
 client = genai.Client(api_key=API_KEY)
 
+# ==========================================================
+# Helper Functions
+# ==========================================================
 
-# ----------------------------------------------------
+
+def get_top_product(sales_df):
+
+    if sales_df is None or sales_df.empty:
+        return "Unknown"
+
+    try:
+
+        return (
+            sales_df.groupby("Product")["Revenue"]
+            .sum()
+            .idxmax()
+        )
+
+    except Exception:
+
+        return "Unknown"
+
+
+def get_highest_expense(expenses_df):
+
+    if expenses_df is None or expenses_df.empty:
+        return "Unknown"
+
+    try:
+
+        return (
+            expenses_df.groupby("Category")["Amount"]
+            .sum()
+            .idxmax()
+        )
+
+    except Exception:
+
+        return "Unknown"
+
+
+def get_low_stock(inventory_df):
+
+    if inventory_df is None or inventory_df.empty:
+        return ["None"]
+
+    try:
+
+        products = inventory_df[
+            inventory_df["Stock"]
+            <=
+            inventory_df["Minimum Stock"]
+        ]["Product"].tolist()
+
+        return products if products else ["None"]
+
+    except Exception:
+
+        return ["Unknown"]
+
+
+# ==========================================================
 # Generate Business Report
-# ----------------------------------------------------
+# ==========================================================
+
 
 def generate_business_report(
     kpis,
@@ -36,82 +97,64 @@ def generate_business_report(
     inventory = kpis["Inventory"]
     health = kpis["Health Score"]
 
-    # ------------------------------------------------
-    # Top Selling Product
-    # ------------------------------------------------
+    top_product = get_top_product(sales_df)
 
-    if sales_df is not None and not sales_df.empty:
+    highest_expense = get_highest_expense(expenses_df)
 
-        top_product = (
-            sales_df.groupby("Product")["Revenue"]
-            .sum()
-            .idxmax()
-        )
-
-    else:
-
-        top_product = "Unknown"
-
-    # ------------------------------------------------
-    # Highest Expense Category
-    # ------------------------------------------------
-
-    if expenses_df is not None and not expenses_df.empty:
-
-        highest_expense = (
-            expenses_df.groupby("Category")["Amount"]
-            .sum()
-            .idxmax()
-        )
-
-    else:
-
-        highest_expense = "Unknown"
-
-    # ------------------------------------------------
-    # Low Stock Products
-    # ------------------------------------------------
-
-    low_stock = []
-
-    if inventory_df is not None and not inventory_df.empty:
-
-        low_stock = inventory_df[
-            inventory_df["Stock"]
-            <=
-            inventory_df["Minimum Stock"]
-        ]["Product"].tolist()
-
-    if not low_stock:
-        low_stock = ["None"]
-
-    # ------------------------------------------------
-    # Prompt
-    # ------------------------------------------------
+    low_stock = get_low_stock(inventory_df)
 
     prompt = f"""
-You are a senior business consultant preparing a professional report for a small business owner.
+You are a Senior Business Consultant.
 
-Business Data
+Prepare a professional business report.
 
-Revenue: Rs. {revenue:,.2f}
-Expenses: Rs. {expenses:,.2f}
-Profit: Rs. {profit:,.2f}
-Inventory Units: {inventory}
-Business Health Score: {health}/100
+Business Metrics
 
-Top Selling Product:
+Revenue : Rs. {revenue:,.2f}
+
+Expenses : Rs. {expenses:,.2f}
+
+Profit : Rs. {profit:,.2f}
+
+Inventory Units : {inventory}
+
+Business Health Score : {health}/100
+
+Top Selling Product
+
 {top_product}
 
-Highest Expense Category:
+Highest Expense Category
+
 {highest_expense}
 
-Products Running Low:
+Products Running Low
+
 {", ".join(low_stock)}
 
-Write a professional business report.
+Return ONLY plain text.
 
-The report MUST contain exactly these sections:
+Never use Markdown.
+
+Never use:
+
+**
+
+__
+
+#
+
+1.
+
+2.
+
+3.
+
+BUSINESS ANALYSIS REPORT
+
+Do not wrap text inside code blocks.
+
+The report MUST contain ONLY these sections:
 
 Business Summary
 
@@ -123,28 +166,29 @@ Risks
 
 Actionable Recommendations
 
-Formatting Rules:
+Under every section write exactly 3-5 bullet points.
 
-• Use plain text only.
-• Do NOT use Markdown.
-• Do NOT use ** or __.
-• Do NOT use # headings.
-• Do NOT number sections.
-• Use the section titles exactly as written.
-• Under each section write 3–5 concise bullet points.
-• Every bullet must begin with the bullet character (•).
-• Keep recommendations practical.
-• Do not write introductions or conclusions.
+Every bullet MUST start with:
+
+•
+
+No introductions.
+
+No conclusions.
+
+No markdown tables.
+
+Keep recommendations practical.
 """
 
-    # ------------------------------------------------
-    # AI Model Fallback Chain
-    # ------------------------------------------------
-
     models = [
+
         "gemma-4-31b-it",
+
         "gemma-4-26b-a4b-it",
+
         "gemini-3.5-flash",
+
     ]
 
     last_error = None
@@ -153,33 +197,36 @@ Formatting Rules:
 
         try:
 
+            print(f"Trying model: {model}")
+
             response = client.models.generate_content(
                 model=model,
                 contents=prompt,
-                config={
-                    "temperature": 0.3,
-                },
             )
 
             text = getattr(response, "text", None)
 
-            if text and text.strip():
+            if text:
 
-                print(f"✅ Using AI model: {model}")
+                cleaned = text.strip()
 
-                return text.strip()
+                if cleaned:
+
+                    print(f"Using AI model: {model}")
+
+                    return cleaned
 
         except Exception as e:
 
-            print(f"❌ {model} failed: {e}")
+            print(f"{model} failed")
+
+            print(e)
 
             last_error = e
 
             continue
 
-    # ------------------------------------------------
-    # Final Fallback
-    # ------------------------------------------------
+    print("All models failed.")
 
     return f"""
 Business Summary
@@ -188,21 +235,33 @@ Business Summary
 
 Strengths
 
-• Revenue, expenses, inventory and forecast are still available.
+• Business analytics were generated successfully.
+
+• KPI calculations remain available.
 
 Weaknesses
 
 • AI service is currently unavailable.
 
+• Automated recommendations could not be produced.
+
 Risks
 
-• Business recommendations could not be generated.
+• Strategic insights are unavailable until AI services recover.
+
+• Business decisions should rely on dashboard metrics for now.
 
 Actionable Recommendations
 
-• Please try generating the report again later.
+• Try generating the report again.
+
+• Check your API key and internet connection.
+
+• Retry after a few minutes.
 
 Technical Details
 
-• Last Error: {last_error}
+Last Error:
+
+{last_error}
 """
