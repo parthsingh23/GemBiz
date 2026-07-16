@@ -19,7 +19,8 @@ def map_columns(df, dataset_type):
         expected = [
             "Date",
             "Product",
-            "Revenue"
+            "Revenue",
+            "Units Sold"
         ]
 
     elif dataset_type == "inventory":
@@ -41,7 +42,7 @@ def map_columns(df, dataset_type):
 
     else:
 
-        return df
+        return df, {}
 
     # ============================================
     # NEW: Skip AI if the CSV already has
@@ -52,7 +53,16 @@ def map_columns(df, dataset_type):
     uploaded_set = set(df.columns)
 
     if expected_set.issubset(uploaded_set):
-        return df
+        
+        mapping = {}
+
+        for col in expected:
+            mapping[col] = {
+                "type": "column",
+                "source": col,
+        }
+
+        return df, mapping
 
     # ============================================
     # Continue with AI mapping
@@ -63,43 +73,115 @@ def map_columns(df, dataset_type):
     sample = df.head(5).to_markdown(index=False)
 
     prompt = f"""
-You are an expert data engineer.
+        You are an expert business data engineer.
 
-A user uploaded a {dataset_type} CSV.
+        A user uploaded a {dataset_type} CSV.
 
-Expected columns:
+    Expected business schema:
 
-{expected}
+        {expected}
 
-Uploaded columns:
+        Uploaded columns:
 
-{columns}
+        {columns}
 
-Sample rows:
+        Sample data:
 
-{sample}
+        {sample}
 
-Your job is to match uploaded columns
-to expected columns.
+        Your task is to transform ANY business dataset into GemBiz's internal schema.
 
-Return ONLY JSON.
+        For every expected field:
 
-Example:
+        1. If an uploaded column directly matches it,
+           return:
 
-{{
-    "Date":"Invoice Date",
-    "Product":"Item Name",
-    "Revenue":"Sales Value"
-}}
+        "type":"column"
 
-If an expected column
-cannot be identified,
-set its value to null.
+        2. If it can be computed,
+        return
 
-Do NOT explain anything.
+        "type":"formula"
 
-Return ONLY valid JSON.
-"""
+        Examples:
+
+        Allowed formulas ONLY:
+
+        Revenue = Price * Quantity
+
+        Revenue = Unit Price * Units Sold
+
+        Revenue = Amount
+
+        Units Sold = Quantity
+
+        Units Sold = Qty
+
+        Minimum Stock = 20% of Stock
+
+        Supplier = "Unknown"
+
+        Category = "General"
+
+        Use ONLY one of these formulas exactly as written.
+
+        If none apply, return
+
+        {{
+            "type":"missing"
+        }}
+
+        Never invent new formulas.
+
+        3. If no data exists but a reasonable business assumption can be made,
+        return
+
+        "type":"assumption"
+
+        Examples:
+
+        Minimum Stock = 20% of Stock
+
+        Supplier = "Unknown"
+
+        Category = "General"
+
+        If nothing is possible,
+        return
+
+        "type":"missing"
+
+        Return ONLY valid JSON.
+
+        The JSON MUST contain one object for EVERY expected field.
+
+        If a field cannot be mapped, return
+
+        {{
+            "type":"missing"
+        }}
+
+        Never omit an expected field.
+
+        Example:
+
+        {{
+            "Revenue": {{
+                "type": "formula",
+                "formula": "Price * Quantity"
+            }},
+
+            "Product": {{
+                "type": "column",
+                "source": "SKU"
+            }},
+
+            "Minimum Stock": {{
+                "type": "assumption",
+                "value": "20% of Stock"
+            }}
+        }}
+    """
 
     # response = client.models.generate_content(
     #     model="gemma-4-31b-it",
@@ -107,8 +189,8 @@ Return ONLY valid JSON.
     # )
 
     response = client.models.generate_content(
-    model="gemma-4-31b-it",
-    contents=prompt
+        model="gemma-4-31b-it",
+        contents=prompt
     )
 
     print("========== GEMMA RESPONSE ==========")
@@ -122,14 +204,35 @@ Return ONLY valid JSON.
     text = re.sub(r"^```\s*", "", text)
     text = re.sub(r"\s*```$", "", text)
 
-    mapping = json.loads(text)
+    try:
+        mapping = json.loads(text)
+
+    except Exception as e:
+
+        print("Failed to parse Gemma response")
+        print(e)
+        print(text)
+
+        return df, {}
 
     rename_dict = {}
 
-    for expected_col, uploaded_col in mapping.items():
+    for expected_col, info in mapping.items():
 
-        if uploaded_col is not None:
+        if not isinstance(info, dict):
+            continue
 
-            rename_dict[uploaded_col] = expected_col
+        if info.get("type") == "column":
 
-    return df.rename(columns=rename_dict)
+            source = info.get("source")
+
+            if source in df.columns:
+
+                rename_dict[source] = expected_col
+
+    df.rename(
+        columns=rename_dict,
+        inplace=True,
+    )
+
+    return df,mapping

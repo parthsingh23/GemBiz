@@ -7,7 +7,11 @@ from reportlab.platypus import (
     SimpleDocTemplate,
     Paragraph,
     Spacer,
+    Table,
+    TableStyle
 )
+from reportlab.lib import colors
+from reportlab.lib.units import inch
 
 
 # ==========================================================
@@ -15,8 +19,8 @@ from reportlab.platypus import (
 # ==========================================================
 
 def generate_invoice_number():
-
-    return f"INV-{random.randint(100000, 999999)}"
+    # Adjusted to match the 9-digit format in the GEMBIZ FORMAT reference
+    return f"INV-{random.randint(100000,999999)}"
 
 
 # ==========================================================
@@ -27,15 +31,12 @@ def calculate_unit_price(
     sales_df,
     product,
 ):
-
     try:
-
         df = sales_df[
             sales_df["Product"] == product
         ].copy()
 
         revenue = df["Revenue"].sum()
-
         units = df["Units Sold"].sum()
 
         if units == 0:
@@ -44,29 +45,59 @@ def calculate_unit_price(
         return revenue / units
 
     except Exception:
-
         return 0
 
 
-# ==========================================================
-# Generate Invoice PDF
-# ==========================================================
+    # ==========================================================
+    # Generate Invoice PDF
+    # ==========================================================
 
 def generate_invoice_pdf(
     invoice_number,
     customer_name,
     customer_phone,
-    product,
-    quantity,
+    products,
+    quantities,
     sales_df,
 ):
+    table_data = [
+        ["S NO.", "ITEM", "QUANTITY", "RATE", "TOTAL"]
+    ]
 
-    unit_price = calculate_unit_price(
-        sales_df,
-        product,
+    grand_total = 0
+
+    for i, product in enumerate(products, start=1):
+
+        qty = quantities[product]
+
+        unit_price = calculate_unit_price(
+            sales_df,
+            product,
+        )
+
+        line_total = qty * unit_price
+
+        grand_total += line_total
+
+        table_data.append([
+            str(i),
+            product,
+            str(qty),
+            f"Rs. {unit_price:,.2f}",
+            f"Rs. {line_total:,.2f}",
+        ])
+
+    # Business Logic matching GEMBIZ FORMAT.xlsx
+    discount_rate = 0.02
+    discount_amount = grand_total * discount_rate
+
+    subtotal_after_discount = (
+        grand_total - discount_amount
     )
 
-    total = unit_price * quantity
+    gst_rate = 0.18
+    gst_amount = subtotal_after_discount * gst_rate
+    net_payable = subtotal_after_discount + gst_amount
 
     buffer = BytesIO()
 
@@ -82,153 +113,170 @@ def generate_invoice_pdf(
     title.alignment = 1
 
     heading = styles["Heading2"]
+    heading.alignment = 1
 
     normal = styles["BodyText"]
 
-    footer = styles["Italic"]
-
     story = []
-
-    # ======================================================
-    # Title
-    # ======================================================
 
     story.append(
         Paragraph(
-            "<font size='22'><b>GemBiz Invoice</b></font>",
+            "<font size='24'><b>GEMBIZ</b></font>",
             title,
         )
     )
 
     story.append(
         Paragraph(
-            datetime.now().strftime(
-                "Generated on %d %B %Y"
+            "<b>AI Business Intelligence Platform</b>",
+            normal,
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "<font size='16'><b>TAX INVOICE</b></font>",
+            heading,
+        )
+    )
+
+    story.append(Spacer(1, 15))
+
+    # ======================================================
+    # Header Details
+    # ======================================================
+
+    header_table = Table(
+        [[
+            Paragraph(
+                f"""
+                <b>Buyer</b><br/>
+                {customer_name}<br/>
+                <b>Phone</b><br/>
+                {customer_phone}
+                """,
+                normal,
             ),
-            normal,
-        )
+
+            Paragraph(
+                f"""
+                <b>Invoice No.</b><br/>
+                {invoice_number}<br/>
+                <b>Date</b><br/>
+                {datetime.now().strftime("%d-%m-%Y")}
+                """,
+                normal,
+            ),
+        ]],
+        colWidths=[260, 220],
     )
 
-    story.append(Spacer(1, 20))
+    header_table.setStyle(TableStyle([
+        ("GRID",(0,0),(-1,-1),1,colors.black),
+        ("VALIGN",(0,0),(-1,-1),"TOP"),
+        ("TOPPADDING",(0,0),(-1,-1),8),
+        ("BOTTOMPADDING",(0,0),(-1,-1),8),
+    ]))
+
+    story.append(header_table)
+    story.append(Spacer(1, 15))
 
     # ======================================================
-    # Invoice Details
+    # Product Table & Calculations
     # ======================================================
 
-    story.append(
-        Paragraph(
-            "Invoice Details",
-            heading,
-        )
-    )
+    table_data.extend([
 
-    story.append(
-        Paragraph(
-            f"""
-<b>Invoice Number</b><br/>
-{invoice_number}<br/><br/>
+        [
+            "TOTAL",
+            "",
+            "",
+            "",
+            f"Rs. {grand_total:,.2f}",
+        ],
 
-<b>Date</b><br/>
-{datetime.now().strftime("%d-%m-%Y")}
-""",
-            normal,
-        )
-    )
+        [
+            "DISCOUNT (2%)",
+            "",
+            "",
+            "",
+            f"- Rs. {discount_amount:,.2f}",
+        ],
 
-    story.append(Spacer(1, 20))
+        [
+            "GST (18%)",
+            "",
+            "",
+            "",
+            f"Rs. {gst_amount:,.2f}",
+        ],
 
-    # ======================================================
-    # Customer Details
-    # ======================================================
+        [
+            "NET PAYABLE",
+            "",
+            "",
+            "",
+            f"Rs. {net_payable:,.2f}",
+        ],
+    ])
 
-    story.append(
-        Paragraph(
-            "Customer Details",
-            heading,
-        )
-    )
+    summary_start = len(products) + 1
+    
+    # Configure table dimensions
+    t = Table(table_data, colWidths=[1.2*inch, 2*inch, 1*inch, 1*inch, 1.2*inch])
 
-    story.append(
-        Paragraph(
-            f"""
-<b>Name</b><br/>
-{customer_name}<br/><br/>
+    t.setStyle(TableStyle([
+        # Header formatting
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('ALIGN', (1,1), (1,len(products)), 'LEFT'),
+        ('ALIGN', (4,1), (4,-1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
 
-<b>Phone Number</b><br/>
-{customer_phone}
-""",
-            normal,
-        )
-    )
+        # Structure borders
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
 
-    story.append(Spacer(1, 20))
+        # Row Spans for Summaries
+        ('SPAN', (0, summary_start), (3, summary_start)),
 
-    # ======================================================
-    # Product Details
-    # ======================================================
+        ('SPAN', (0, summary_start + 1), (3, summary_start + 1)),
 
-    story.append(
-        Paragraph(
-            "Product Details",
-            heading,
-        )
-    )
+        ('SPAN', (0, summary_start + 2), (3, summary_start + 2)),
 
-    story.append(
-        Paragraph(
-            f"""
-<b>Product</b><br/>
-{product}<br/><br/>
+        ('SPAN', (0, summary_start + 3), (3, summary_start + 3)),
 
-<b>Quantity</b><br/>
-{quantity}<br/><br/>
+        # Summary Bold Fonts
+        ('FONTNAME', (0, summary_start), (-1, -1), 'Helvetica-Bold'),
 
-<b>Unit Price</b><br/>
-Rs. {unit_price:,.2f}<br/><br/>
+        # Padding
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+    ]))
 
-<b>Total Amount</b><br/>
-Rs. {total:,.2f}
-""",
-            normal,
-        )
-    )
-
-    story.append(Spacer(1, 25))
+    story.append(t)
+    story.append(Spacer(1, 30))
 
     # ======================================================
     # Footer
     # ======================================================
 
-    story.append(
-        Paragraph(
-            "<hr/>",
-            normal,
-        )
-    )
+    footer_text = f"""
+    <hr/>
 
-    story.append(
-        Paragraph(
-            "<b>GemBiz</b>",
-            footer,
-        )
-    )
+    <b>Generated using GemBiz</b><br/>
 
-    story.append(
-        Paragraph(
-            "AI-Powered Business Intelligence",
-            footer,
-        )
-    )
+    Powered by Google Gemma<br/><br/>
 
-    story.append(
-        Paragraph(
-            "Powered by Google Gemma",
-            footer,
-        )
-    )
+    This invoice was generated electronically.<br/>
+
+    No signature required.
+    """
+
+    story.append(Paragraph(footer_text, normal))
 
     doc.build(story)
-
     buffer.seek(0)
 
     return buffer

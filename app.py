@@ -346,17 +346,22 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
                 sales_df["Product"].unique()
             )
 
-            product = st.selectbox(
+            selected_products = st.multiselect(
                 "Select Product",
                 products,
             )
 
-            quantity = st.number_input(
-                "Quantity",
-                min_value=1,
-                value=1,
-                step=1,
-            )
+            quantities = {}
+
+            for product in selected_products:
+            
+                quantities[product] = st.number_input(
+                    f"Quantity for {product}",
+                    min_value=1,
+                    value=1,
+                    step=1,
+                    key=f"qty_{product}",
+                )
 
             st.info(
                 f"Invoice Number: {st.session_state.invoice_number}"
@@ -390,8 +395,8 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
                 invoice_number=st.session_state.invoice_number,
                 customer_name=customer_name,
                 customer_phone=customer_phone,
-                product=product,
-                quantity=quantity,
+                products=selected_products,
+                quantities=quantities,
                 sales_df=sales_df,
             )
 
@@ -409,34 +414,34 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
             st.divider()
 
             st.subheader("Invoice Preview")
-
-            unit_price = calculate_unit_price(
-                sales_df,
-                product,
-            )
-
-            if unit_price <= 0:
-                st.error(
-                    "Unable to determine the product price from the uploaded sales data."
+            
+            st.write(f"**Invoice No.:** {st.session_state.invoice_number}")
+            st.write(f"**Customer:** {customer_name}")
+            st.write(f"**Phone:** {customer_phone}")
+            
+            grand_total = 0
+            
+            for p in selected_products:
+            
+                unit_price = calculate_unit_price(
+                    sales_df,
+                    p,
                 )
-                st.stop()
-
-            total = unit_price * quantity
-
-            c1, c2 = st.columns(2)
-
-            with c1:
-                st.write(f"**Invoice No.:** {st.session_state.invoice_number}")
-                st.write(f"**Customer:** {customer_name}")
-                st.write(f"**Phone:** {customer_phone}")
-
-            with c2:
-                st.write(f"**Product:** {product}")
-                st.write(f"**Quantity:** {quantity}")
-                st.write(f"**Unit Price:** Rs. {unit_price:,.2f}")
-                st.write(f"**Total:** Rs. {total:,.2f}")
-
-            # Generate a new invoice number for the next invoice
+            
+                qty = quantities[p]
+            
+                total = qty * unit_price
+            
+                grand_total += total
+            
+                st.write(
+                    f"- {p} | Qty: {qty} | "
+                    f"Rs. {unit_price:,.2f} | "
+                    f"Rs. {total:,.2f}"
+                )
+            
+            st.write(f"### Total: Rs. {grand_total:,.2f}")
+            
             st.session_state.invoice_number = generate_invoice_number()
 
 else:
