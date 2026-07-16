@@ -1,5 +1,6 @@
 import streamlit as st
 import time
+import hashlib
 
 from streamlit_lottie import st_lottie
 import requests
@@ -35,10 +36,14 @@ if "chat_history" not in st.session_state:
 
 LOTTIE_URL = "https://assets10.lottiefiles.com/packages/lf20_usmfx6bp.json"
 
-try:
-    animation = requests.get(LOTTIE_URL).json()
-except:
-    animation = None
+@st.cache_data
+def load_animation():
+    try:
+        return requests.get(LOTTIE_URL).json()
+    except:
+        return None
+
+animation = load_animation()
 
 with st.sidebar:
     st.title("💎 GemBiz")
@@ -59,20 +64,80 @@ with st.sidebar:
 
 try:
 
-    sales_df = load_csv(
-        sales_file,
-        "sales"
-    )
+    # ==========================
+    # SALES
+    # ==========================
 
-    inventory_df = load_csv(
-        inventory_file,
-        "inventory"
-    )
+    if sales_file is not None:
 
-    expenses_df = load_csv(
-        expenses_file,
-        "expenses"
-    )
+        sales_hash = hashlib.md5(
+            sales_file.getvalue()
+        ).hexdigest()
+
+        if (
+            "sales_df" not in st.session_state
+            or st.session_state.get("sales_hash") != sales_hash
+        ):
+
+            st.session_state.sales_df = load_csv(
+                sales_file,
+                "sales"
+            )
+
+            st.session_state.sales_hash = sales_hash
+            st.session_state.pop("report", None)
+
+    sales_df = st.session_state.get("sales_df")
+
+    # ==========================
+    # INVENTORY
+    # ==========================
+
+    if inventory_file is not None:
+
+        inventory_hash = hashlib.md5(
+            inventory_file.getvalue()
+        ).hexdigest()
+
+        if (
+            "inventory_df" not in st.session_state
+            or st.session_state.get("inventory_hash") != inventory_hash
+        ):
+
+            st.session_state.inventory_df = load_csv(
+                inventory_file,
+                "inventory"
+            )
+
+            st.session_state.inventory_hash = inventory_hash
+            st.session_state.pop("report", None)
+
+    inventory_df = st.session_state.get("inventory_df")
+
+    # ==========================
+    # EXPENSES
+    # ==========================
+
+    if expenses_file is not None:
+
+        expenses_hash = hashlib.md5(
+            expenses_file.getvalue()
+        ).hexdigest()
+
+        if (
+            "expenses_df" not in st.session_state
+            or st.session_state.get("expenses_hash") != expenses_hash
+        ):
+
+            st.session_state.expenses_df = load_csv(
+                expenses_file,
+                "expenses"
+            )
+
+            st.session_state.expenses_hash = expenses_hash
+            st.session_state.pop("report", None)
+
+    expenses_df = st.session_state.get("expenses_df")
 
 except Exception as e:
 
@@ -138,43 +203,53 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
 
     placeholder = st.empty()
 
-    try:
+    generate_report = st.button(
+        "🤖 Generate AI Business Report",
+        width="stretch",
+    )
 
-        with placeholder.container():
+    if generate_report:
 
-            if animation:
-                st_lottie(
-                    animation,
-                    height=220,
-                    key="loading",
+        try:
+
+            with placeholder.container():
+
+                if animation:
+                    st_lottie(
+                        animation,
+                        height=220,
+                        key="loading",
+                    )
+
+                st.info("🤖 GemBiz AI is analyzing your business...")
+
+                report = generate_business_report(
+                    kpis,
+                    sales_df,
+                    inventory_df,
+                    expenses_df,
                 )
 
-            st.info("🤖 GemBiz AI is analyzing your business...")
+                st.session_state.report = report
 
-            report = generate_business_report(
-                kpis,
-                sales_df,
-                inventory_df,
-                expenses_df,
-            )
+                st.success("✅ Analysis Complete!")
 
-        placeholder.empty()
+            placeholder.empty()
 
-        st.success("✅ Analysis Complete!")
+        except Exception as e:
+
+            placeholder.empty()
+
+            st.error(e)
+
+    if "report" in st.session_state:
 
         with st.container(border=True):
-            st.markdown(report)
 
-    except Exception as e:
-
-        placeholder.empty()
-
-        report = f"Unable to generate report.\n\n{e}"
-
-        st.error(report)
-
-        st.divider()
-
+            st.markdown(
+                st.session_state.report
+            )
+            
     # ======================================================
     # AI Chat
     # ======================================================
@@ -251,14 +326,6 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
 
         st.rerun()
 
-        # for q, a in reversed(st.session_state.chat_history):
-        
-        #     with st.chat_message("user"):
-        #         st.write(q)
-
-        #     with st.chat_message("assistant"):
-        #         st.write(a)
-
     st.divider()
 
     st.caption("Forecast generated using historical revenue trends.")
@@ -305,18 +372,19 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
                 width="stretch"
             )
 
-        st.download_button(
-            label="📄 Download Business Report",
-            data=generate_pdf(
-                kpis,
-                report,
-                forecast_df
-            ),
-            file_name="GemBiz_Report.pdf",
-            mime="application/pdf",
-            width="stretch",
-        )
-
+        if "report" in st.session_state:
+            st.download_button(
+                label="📄 Download Business Report",
+                data=generate_pdf(
+                    kpis,
+                    st.session_state.report,
+                    forecast_df
+                ),
+                file_name="GemBiz_Report.pdf",
+                mime="application/pdf",
+                width="stretch",
+            )
+        
         # ======================================================
         # Invoice Generator
         # ======================================================
@@ -374,7 +442,6 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
 
         if generate_invoice:
 
-
             if not customer_name.strip():
                 st.error("Enter customer name.")
                 st.stop()
@@ -389,6 +456,10 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
 
             if len(customer_phone) != 10:
                 st.error("Phone number must be 10 digits.")
+                st.stop()
+                
+            if not selected_products:
+                st.error("Select at least one product.")
                 st.stop()
         
             invoice_pdf = generate_invoice_pdf(
@@ -414,34 +485,34 @@ if sales_df is not None and inventory_df is not None and expenses_df is not None
             st.divider()
 
             st.subheader("Invoice Preview")
-            
+
             st.write(f"**Invoice No.:** {st.session_state.invoice_number}")
             st.write(f"**Customer:** {customer_name}")
             st.write(f"**Phone:** {customer_phone}")
-            
+
             grand_total = 0
-            
+
             for p in selected_products:
             
                 unit_price = calculate_unit_price(
                     sales_df,
                     p,
                 )
-            
+
                 qty = quantities[p]
-            
+
                 total = qty * unit_price
-            
+
                 grand_total += total
-            
+
                 st.write(
                     f"- {p} | Qty: {qty} | "
                     f"Rs. {unit_price:,.2f} | "
                     f"Rs. {total:,.2f}"
                 )
-            
+
             st.write(f"### Total: Rs. {grand_total:,.2f}")
-            
+
             st.session_state.invoice_number = generate_invoice_number()
 
 else:

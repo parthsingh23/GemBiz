@@ -1,7 +1,8 @@
 import plotly.express as px
 import plotly.graph_objects as go
+import streamlit as st
 
-
+@st.cache_data
 def revenue_chart(df):
 
     revenue = (
@@ -19,7 +20,7 @@ def revenue_chart(df):
 
     return fig
 
-
+@st.cache_data
 def expense_chart(df):
 
     expense = (
@@ -37,7 +38,7 @@ def expense_chart(df):
 
     return fig
 
-
+@st.cache_data
 def inventory_chart(df):
 
     fig = px.bar(
@@ -49,7 +50,7 @@ def inventory_chart(df):
 
     return fig
 
-
+@st.cache_data
 def top_products_chart(df):
 
     top = (
@@ -71,7 +72,7 @@ def top_products_chart(df):
 
     return fig
 
-
+@st.cache_data
 def forecast_chart(history_df, forecast_df):
 
     fig = go.Figure()

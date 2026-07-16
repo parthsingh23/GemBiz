@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
+import streamlit as st
 
-
+@st.cache_data
 def forecast_sales(sales_df, days=7):
     """
     Forecast future revenue using a simple linear trend.
