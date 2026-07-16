@@ -10,6 +10,12 @@ Built for the **Build with Gemma Hackathon**.
 
 ---
 
+## 🌐 Live Demo
+
+https://gembiz.streamlit.app
+
+---
+
 # 📌 Problem Statement
 
 Small businesses often manage their operations through spreadsheets.
