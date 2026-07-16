@@ -2,195 +2,336 @@
 
 ### AI-Powered Business Intelligence Platform for Small Businesses
 
-GemBiz transforms raw business CSV files into actionable insights using
-**Google Gemma**, interactive dashboards, forecasting, and AI-powered
-business recommendations.
+GemBiz transforms raw business CSV files into actionable business insights using **Google Gemma 4**. Upload your sales, inventory, and expense data to instantly generate dashboards, forecasts, AI-generated reports, business recommendations, and professional invoices.
 
 Built for the **Build with Gemma Hackathon**.
 
-> **Status:** 🚀 Hackathon Submission
+> 🚀 AI-Powered • Business Analytics • Forecasting • Smart Invoicing
 
-------------------------------------------------------------------------
+---
 
-## 📌 Problem Statement
+# 📌 Problem Statement
 
-Small businesses often manage sales, inventory, and expenses using
-spreadsheets. While the data exists, extracting meaningful insights
-usually requires expensive BI software or technical expertise.
+Small businesses often manage their operations through spreadsheets.
 
-As a result, business owners struggle to: - Track profitability -
-Monitor inventory efficiently - Forecast future sales - Make data-driven
-decisions
+While they possess valuable business data, extracting meaningful insights requires either expensive Business Intelligence software or technical expertise.
 
-------------------------------------------------------------------------
+Business owners struggle to:
 
-## 💡 Solution
+- 📈 Monitor sales performance
+- 💰 Track profitability
+- 📦 Manage inventory
+- 📉 Forecast future revenue
+- 📊 Make data-driven decisions
 
-GemBiz is an AI-powered Business Intelligence platform that converts
-simple CSV files into interactive dashboards, AI-generated reports,
-forecasts, and downloadable PDF summaries.
+---
 
-Users only need to upload three CSV files:
+# 💡 Solution
 
--   📈 Sales Data
--   📦 Inventory Data
--   💰 Expense Data
+GemBiz is an AI-powered Business Intelligence platform that converts ordinary CSV files into an intelligent business dashboard.
 
-GemBiz handles the analysis automatically.
+Simply upload:
 
-------------------------------------------------------------------------
+- 📈 Sales Data
+- 📦 Inventory Data
+- 💰 Expense Data
 
-## ✨ Features
+GemBiz automatically:
 
--   📊 Interactive Business Dashboard
--   💰 Revenue, Expenses & Profit KPIs
--   ❤️ Business Health Score
--   📦 Inventory Analytics
--   📈 Revenue Trend Visualization
--   🛒 Top Selling Products Analysis
--   🤖 AI Business Report powered by Google Gemma
--   💬 AI Business Chat Assistant
--   📈 7-Day Revenue Forecast
--   📄 Professional PDF Report Export
--   🔁 Automatic AI Model Fallback
+- Cleans and standardizes data
+- Maps different CSV schemas using Google Gemma
+- Generates business KPIs
+- Creates interactive visualizations
+- Forecasts revenue
+- Produces AI-generated business reports
+- Answers business questions through an AI assistant
+- Generates professional GST-style invoices
 
-------------------------------------------------------------------------
+---
 
-## 🛠 Tech Stack
+# ✨ Features
 
-### Frontend
+## 📊 Business Dashboard
 
--   Streamlit
+- Revenue, Expenses & Profit KPIs
+- Business Health Score
+- Inventory Overview
+- Top Selling Products
+- Interactive Charts
 
-### Backend
+---
 
--   Python
+## 🤖 AI-Powered CSV Understanding
 
-### AI
+Unlike traditional dashboards, GemBiz understands **different CSV formats**.
 
--   Google Gemma 4
--   Google GenAI SDK
+It automatically:
 
-### Data Processing
+- Detects column mappings
+- Handles inconsistent datasets
+- Infers missing business fields
+- Creates intelligent assumptions when possible
 
--   Pandas
--   NumPy
+Powered by **Google Gemma 4**.
 
-### Machine Learning
+---
 
--   Scikit-learn
+## 📈 Revenue Forecasting
 
-### Visualization
+- 7-Day Revenue Prediction
+- Trend Analysis
+- Forecast Visualization
 
--   Plotly
+---
 
-### PDF Generation
+## 🤖 AI Business Report
 
--   ReportLab
+Generate an executive report containing:
 
-------------------------------------------------------------------------
+- Business Summary
+- Strengths
+- Weaknesses
+- Risks
+- Actionable Recommendations
 
-## 🏗 Architecture
+---
 
-``` text
-CSV Files
-     │
-     ▼
-CSV Parser
-     │
-     ▼
-Analytics Engine
-     │
-     ├── KPI Calculator
-     ├── Forecast Model
-     ├── Plotly Charts
-     └── Google Gemma AI
+## 💬 AI Business Assistant
+
+Ask natural language questions such as:
+
+- Why is my profit decreasing?
+- Which products should I restock?
+- Which month performed the best?
+- How can I improve revenue?
+
+Powered by Google Gemma.
+
+---
+
+## 🧾 Smart Invoice Generator
+
+Generate professional invoices with:
+
+- Customer Details
+- Multiple Product Selection
+- Quantity Management
+- Automatic Unit Price Calculation
+- Discount Calculation
+- GST Calculation
+- Net Payable Amount
+- Downloadable PDF Invoice
+
+---
+
+## 📄 PDF Business Report
+
+Export a professionally formatted PDF containing:
+
+- KPIs
+- Charts
+- AI Summary
+- Business Recommendations
+
+---
+
+## ⚡ Performance Optimizations
+
+- AI schema mapping cached using file hashing
+- Prevents unnecessary API calls
+- Faster dashboard updates
+- Graceful fallback for malformed AI responses
+
+---
+
+# 🛠 Tech Stack
+
+## Frontend
+
+- Streamlit
+
+## Backend
+
+- Python
+
+## AI
+
+- Google Gemma 4
+- Google GenAI SDK
+
+## Data Processing
+
+- Pandas
+- NumPy
+
+## Machine Learning
+
+- Scikit-learn
+
+## Visualization
+
+- Plotly
+
+## PDF Generation
+
+- ReportLab
+
+---
+
+# 🏗 Architecture
+
+```text
+                 CSV Files
+                     │
+                     ▼
+          AI Schema Detection
+           (Google Gemma 4)
+                     │
+                     ▼
+           Smart CSV Parser
+                     │
+                     ▼
+          Data Standardization
+                     │
+                     ▼
+          Business Analytics Engine
+             │        │        │
+             │        │        │
+             ▼        ▼        ▼
+        KPIs     Forecasts   Charts
              │
              ▼
- AI Report + AI Chat + PDF Export
+        Google Gemma 4
+             │
+      ┌──────┼───────────┐
+      ▼      ▼           ▼
+ AI Report  AI Chat   PDF Export
+                     │
+                     ▼
+             Invoice Generator
 ```
 
-------------------------------------------------------------------------
+---
 
-## 📂 Project Structure
+# 📂 Project Structure
 
-``` text
-GemBiz
+```text
+GemBiz/
 │
 ├── app.py
 ├── assets/
 ├── data/
-├── docs/
-├── uploads/
 ├── exports/
 ├── utils/
+│   ├── analytics.py
+│   ├── business_chat.py
+│   ├── charts.py
+│   ├── forecast.py
+│   ├── gemma_ai.py
+│   ├── invoice_generator.py
+│   ├── parser.py
+│   ├── pdf_generator.py
+│   └── schema_mapper.py
+│
 ├── requirements.txt
 └── README.md
 ```
 
-------------------------------------------------------------------------
+---
 
-## 🚀 Installation
+# 🚀 Installation
 
-``` bash
-git clone https://github.com/parthsingh23/businessAnalyzer.git
+```bash
+git clone https://github.com/parthsingh23/GemBiz.git
 
-cd businessAnalyzer
+cd GemBiz
 
 python -m venv venv
 
-source venv/bin/activate   # Linux/macOS
-# OR
-venv\Scripts\activate      # Windows
+# Linux/macOS
+source venv/bin/activate
+
+# Windows
+venv\Scripts\activate
 
 pip install -r requirements.txt
 
 streamlit run app.py
 ```
 
-------------------------------------------------------------------------
+---
 
-## 🔑 Environment Variables
+# 🔑 Environment Variables
 
-Create a `.env` file in the project root.
+Create a `.env` file.
 
-``` env
+```env
 GEMINI_API_KEY=YOUR_API_KEY
 ```
 
-------------------------------------------------------------------------
+---
 
-## 📂 Sample Dataset
+# 📂 Sample Datasets
 
-Sample CSV files are included in the `data/` folder:
+Example CSV files are included inside the **data/** folder.
 
--   sample_sales.csv
--   sample_inventory.csv
--   sample_expenses.csv
+- sample_sales.csv
+- sample_inventory.csv
+- sample_expenses.csv
 
-------------------------------------------------------------------------
+These can be used to explore the application without preparing your own datasets.
 
-## 🚀 Future Scope
+---
 
--   Multi-user authentication
--   Cloud database integration
--   Smart inventory alerts
--   Demand forecasting
--   Sales anomaly detection
--   GST & accounting integration
--   Real-time business monitoring
+<!-- # 🎯 Future Scope
 
-------------------------------------------------------------------------
+- Multi-user authentication
+- Cloud database integration
+- Automated inventory alerts
+- Demand forecasting
+- Sales anomaly detection
+- Customer analytics
+- GST & accounting software integration
+- Real-time business monitoring
+- WhatsApp & Email report delivery
+- Multi-language AI assistant
 
-## 📄 License
+--- -->
+
+<!-- # 📸 Screenshots
+
+> Add screenshots of:
+
+- Dashboard
+- Analytics
+- AI Report
+- AI Chat
+- Revenue Forecast
+- Invoice Generator
+
+--- -->
+
+# 🏆 Built For
+
+**Build with Gemma Hackathon**
+
+Powered by **Google Gemma 4**
+
+---
+
+# 👥 Team
+
+**Team ByteForge**
+
+### Members
+
+- Rohan Shaw
+- Khushbu Shaw
+- Samiya Ali
+- Parth Singh
+
+---
+
+# 📄 License
 
 This project is licensed under the MIT License.
-
-------------------------------------------------------------------------
-
-## 👨‍💻 Developer
-
-**Parth Singh**
-
-Built for the **Build with Gemma Hackathon** using Google Gemma,
-Streamlit, Plotly, and Python.
