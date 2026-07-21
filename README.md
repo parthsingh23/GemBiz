@@ -329,11 +329,8 @@ Powered by **Google Gemma 4**
 
 **Team ByteForge**
 
-### Members
+### Built By
 
-- Rohan Shaw
-- Khushbu Shaw
-- Samiya Ali
 - Parth Singh
 
 ---
